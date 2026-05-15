@@ -18,17 +18,21 @@ services:
     name: myproperty-api
     env: dotnet
     plan: free
+    runtime: dotnet-8
+    repo: https://github.com/amx100/myproperty
+    branch: main
+    rootDir: api/MyProperty.API
     buildCommand: dotnet publish -c Release -o out
-    startCommand: cd out && dotnet MyProperty.API.dll
+    startCommand: dotnet out/MyProperty.API.dll
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
       - key: ASPNETCORE_URLS
-        value: http://+:8080
-      - key: ConnectionStrings__MainDB
-        fromDatabase:
+        value: http://+:10000
+      - fromService:
           name: myproperty-db
           property: connectionString
+        key: ConnectionStrings__MainDB
       - key: JWTSettings__securityKey
         value: 7T-d1gfnZ_RqrWVHQYOo8ESZXDwwvPQ8ymWNGqFEm0c
       - key: JWTSettings__validIssuer
@@ -38,32 +42,17 @@ services:
       - key: JWTSettings__expiryInMinutes
         value: "10"
     headers:
-      - path: /
+      - path: /api
         name: Access-Control-Allow-Origin
-        value: https://myproperty-ui.onrender.com
-    routes:
-      - path: /
-        destination: /
-    rootDir: api/MyProperty.API
-    startSubprocesses: false
+        value: "https://myproperty-ui.onrender.com"
 
-  # Blazor WebAssembly UI
+  # Blazor WebAssembly UI (Static Site)
   - type: web
     name: myproperty-ui
     env: static
     plan: free
-    buildCommand: |
-      cd ui/MyProperty.UI/MyProperty.UI && \
-      dotnet publish -c Release -o bin/Release/net8.0/publish/wwwroot
-    routes:
-      - path: /
-        destination: /index.html
-    staticPublishPath: ui/MyProperty.UI/MyProperty.UI/bin/Release/net8.0/publish/wwwroot
-    envVars: []
-    headers:
-      - path: /
-        name: Access-Control-Allow-Origin
-        value: https://myproperty-api.onrender.com
-      - path: /
-        name: Cache-Control
-        value: public, max-age=3600
+    repo: https://github.com/amx100/myproperty
+    branch: main
+    rootDir: ui/MyProperty.UI/MyProperty.UI
+    buildCommand: dotnet publish -c Release -o dist/wwwroot
+    staticPublishPath: dist/wwwroot
