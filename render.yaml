@@ -1,0 +1,69 @@
+services:
+  # PostgreSQL baza podataka
+  - type: pserv
+    name: myproperty-db
+    env: postgres
+    plan: free
+    ipAllowList: []
+    envVars:
+      - key: POSTGRES_DB
+        value: real_estate
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+
+  # REST API
+  - type: web
+    name: myproperty-api
+    env: dotnet
+    plan: free
+    buildCommand: dotnet publish -c Release -o out
+    startCommand: cd out && dotnet MyProperty.API.dll
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:8080
+      - key: ConnectionStrings__MainDB
+        fromDatabase:
+          name: myproperty-db
+          property: connectionString
+      - key: JWTSettings__securityKey
+        value: 7T-d1gfnZ_RqrWVHQYOo8ESZXDwwvPQ8ymWNGqFEm0c
+      - key: JWTSettings__validIssuer
+        value: https://myproperty-api.onrender.com
+      - key: JWTSettings__validAudience
+        value: https://myproperty-ui.onrender.com
+      - key: JWTSettings__expiryInMinutes
+        value: "10"
+    headers:
+      - path: /
+        name: Access-Control-Allow-Origin
+        value: https://myproperty-ui.onrender.com
+    routes:
+      - path: /
+        destination: /
+    rootDir: api/MyProperty.API
+    startSubprocesses: false
+
+  # Blazor WebAssembly UI
+  - type: web
+    name: myproperty-ui
+    env: static
+    plan: free
+    buildCommand: |
+      cd ui/MyProperty.UI/MyProperty.UI && \
+      dotnet publish -c Release -o bin/Release/net8.0/publish/wwwroot
+    routes:
+      - path: /
+        destination: /index.html
+    staticPublishPath: ui/MyProperty.UI/MyProperty.UI/bin/Release/net8.0/publish/wwwroot
+    envVars: []
+    headers:
+      - path: /
+        name: Access-Control-Allow-Origin
+        value: https://myproperty-api.onrender.com
+      - path: /
+        name: Cache-Control
+        value: public, max-age=3600
